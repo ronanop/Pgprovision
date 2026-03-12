@@ -1,0 +1,18 @@
+version: '3.8'
+
+services:
+  platform_db:
+    image: postgres:15
+    container_name: pgprov_platform_db
+    environment:
+      POSTGRES_DB: platform_db
+      POSTGRES_USER: platform_admin
+      POSTGRES_PASSWORD: platform_secret
+    ports:
+      - "5434:5432"
+    volumes:
+      - platform_db_data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+volumes:
+  platform_db_data:
