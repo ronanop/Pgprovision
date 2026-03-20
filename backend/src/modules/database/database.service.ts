@@ -3,6 +3,24 @@ import * as dockerService from '../docker/docker.service';
 import { generatePassword } from '../../utils/password';
 import { generateDatabaseName, generateDatabaseUser, isValidDatabaseName } from '../../utils/sanitize';
 import { config } from '../../config/index';
+import net from 'net';
+
+/**
+ * Check if a port is actually available on the host.
+ */
+function isPortFree(port: number): Promise<boolean> {
+  return new Promise((resolve) => {
+    const server = net.createServer();
+    server.once('error', () => {
+      resolve(false);
+    });
+    server.once('listening', () => {
+      server.close();
+      resolve(true);
+    });
+    server.listen(port);
+  });
+}
 
 /**
  * Find an available port in the configured range.
@@ -11,7 +29,10 @@ async function findAvailablePort(): Promise<number> {
   const usedPorts = await dbRepository.getUsedPorts();
   for (let port = config.portRangeStart; port <= config.portRangeEnd; port++) {
     if (!usedPorts.includes(port)) {
-      return port;
+      const free = await isPortFree(port);
+      if (free) {
+        return port;
+      }
     }
   }
   throw new Error('No available ports in the configured range');
